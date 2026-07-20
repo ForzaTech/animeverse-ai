@@ -7,7 +7,8 @@ from datetime import datetime
 
 from news.anime import get_anime_news
 from news.manga import get_manga_news
-from utils.telegram import send_message
+from utils.telegram import send_message, send_photo
+from utils.anilist import search_anime
 
 
 SENT_FILE = "sent_news.json"
@@ -45,7 +46,12 @@ def load_sent_news():
             encoding="utf-8"
         ) as file:
 
-            return json.load(file)
+            data = json.load(file)
+
+            if isinstance(data, list):
+                return data
+
+            return []
 
     except:
 
@@ -70,35 +76,17 @@ def save_sent_news(data):
 
 
 
-def get_source(link):
+def create_message(news, anime_info=None):
 
-    if "myanimelist" in link:
-        return "MyAnimeList"
-
-    if "animenewsnetwork" in link:
-        return "Anime News Network"
-
-    return "Unknown"
-
-
-
-def create_message(news):
-
-    category = news.get(
-        "type",
-        "news"
+    category = (
+        "📚 Manga News"
+        if news.get("type") == "manga"
+        else
+        "🎬 Anime News"
     )
 
 
-    if category == "manga":
-        category = "📚 Manga News"
-
-    else:
-        category = "🎬 Anime News"
-
-
-
-    return f"""
+    message = f"""
 🌸 AnimeVerse
 
 {category}
@@ -110,22 +98,46 @@ def create_message(news):
 
 📝 خلاصه:
 {news['summary']}
+"""
 
 
-🌐 منبع:
-{get_source(news['link'])}
+    if anime_info:
+
+        message += f"""
+
+━━━━━━━━━━━━
+
+⭐ امتیاز:
+{anime_info.get('score', 'N/A')}/100
 
 
-🕒 زمان دریافت:
-{datetime.now().strftime("%Y-%m-%d %H:%M")}
+🎭 ژانر:
+{anime_info.get('genres', 'N/A')}
 
 
-🔗 لینک:
+📺 قسمت‌ها:
+{anime_info.get('episodes', 'N/A')}
+
+
+📌 وضعیت:
+{anime_info.get('status', 'N/A')}
+"""
+
+
+    message += f"""
+
+━━━━━━━━━━━━
+
+🌐 لینک:
 {news['link']}
 
 
-━━━━━━━━━━━━━━
+🕒 زمان:
+{datetime.now().strftime("%Y-%m-%d %H:%M")}
 """
+
+
+    return message
 
 
 
@@ -162,6 +174,7 @@ async def main():
         )
 
 
+
         if news_id in sent_news:
 
             print(
@@ -173,9 +186,61 @@ async def main():
 
 
 
-        await send_message(
-            create_message(news)
+        anime_info = None
+
+
+
+        if news.get("type") == "anime":
+
+            try:
+
+                anime_info = search_anime(
+                    news["title"]
+                )
+
+            except Exception as e:
+
+                print(
+                    "⚠️ AniList Error:",
+                    e
+                )
+
+
+
+        message = create_message(
+            news,
+            anime_info
         )
+
+
+
+        if (
+            anime_info
+            and anime_info.get("image")
+        ):
+
+            await send_photo(
+                anime_info["image"],
+                message
+            )
+
+            print(
+                "🖼 Photo Sent:",
+                news["title"]
+            )
+
+
+        else:
+
+            await send_message(
+                message
+            )
+
+            print(
+                "📝 Text Sent:",
+                news["title"]
+            )
+
 
 
         sent_news.append(
@@ -186,14 +251,10 @@ async def main():
         new_count += 1
 
 
-        print(
-            "✅ Sent:",
-            news["title"]
-        )
 
-
-
-    save_sent_news(sent_news)
+    save_sent_news(
+        sent_news
+    )
 
 
     print(
