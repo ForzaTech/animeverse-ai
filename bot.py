@@ -25,11 +25,13 @@ def clean_text(text):
         text
     )
 
-    return re.sub(
+    text = re.sub(
         r"\s+",
         " ",
         text.lower()
-    ).strip()
+    )
+
+    return text.strip()
 
 
 
@@ -37,6 +39,7 @@ def load_sent_news():
 
     if not os.path.exists(SENT_FILE):
         return []
+
 
     try:
 
@@ -53,7 +56,8 @@ def load_sent_news():
 
             return []
 
-    except:
+
+    except Exception:
 
         return []
 
@@ -134,6 +138,8 @@ def create_message(news, anime_info=None):
 
 🕒 زمان:
 {datetime.now().strftime("%Y-%m-%d %H:%M")}
+
+━━━━━━━━━━━━
 """
 
 
@@ -151,6 +157,22 @@ async def main():
         +
         get_manga_news()
     )
+
+
+    if not news_list:
+
+        print("❌ No news found")
+
+        await send_message(
+            """
+🌸 AnimeVerse
+
+❌ دریافت خبرها با مشکل مواجه شد.
+"""
+        )
+
+        return
+
 
 
     sent_news = load_sent_news()
@@ -198,6 +220,7 @@ async def main():
                     news["title"]
                 )
 
+
             except Exception as e:
 
                 print(
@@ -224,6 +247,7 @@ async def main():
                 message
             )
 
+
             print(
                 "🖼 Photo Sent:",
                 news["title"]
@@ -235,6 +259,7 @@ async def main():
             await send_message(
                 message
             )
+
 
             print(
                 "📝 Text Sent:",
@@ -255,6 +280,28 @@ async def main():
     save_sent_news(
         sent_news
     )
+
+
+
+    if new_count == 0:
+
+        await send_message(
+            """
+🌸 AnimeVerse
+
+⏳ بررسی جدیدترین اخبار انجام شد.
+
+❌ خبر جدیدی پیدا نشد.
+
+━━━━━━━━━━━━━━
+"""
+        )
+
+
+        print(
+            "📭 No new news"
+        )
+
 
 
     print(
