@@ -1,0 +1,4 @@
+python-telegram-bot==21.10
+feedparser
+requests
+python-dotenv
