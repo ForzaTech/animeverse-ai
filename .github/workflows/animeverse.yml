@@ -39,3 +39,15 @@ jobs:
 
         run: |
           python bot.py
+
+
+      - name: Save sent news
+        run: |
+          git config --global user.name "github-actions"
+          git config --global user.email "github-actions@github.com"
+
+          git add sent_news.json
+
+          git commit -m "Update sent news" || echo "No changes"
+
+          git push
